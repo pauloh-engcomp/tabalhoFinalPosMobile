@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">saveEnviromentData</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="salvar">Salvar</string>
+    <string name="nome">Nome</string>
+    <string name="novo_local">Novo local</string>
+    <string name="success_save">Salvo com sucesso</string>
+    <string name="error_form_invalid">Informe todos os campos</string>
+    <string name="cancelar">Cancelar</string>
+</resources>
