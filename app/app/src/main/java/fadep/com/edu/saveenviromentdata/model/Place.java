@@ -4,47 +4,35 @@ package fadep.com.edu.saveenviromentdata.model;
  * Created by lucas on 04/04/18.
  */
 
-public class Place {
-    private Long id;
-    private String nome;
+@Table(name = "Place")
 
-    public Long getId() {
-        return id;
+public class Place extends Model {
+
+    @Column(name = "id", unique = true, onUniqueConflict = Column.ConflictAction.REPLACE)
+    public long id;
+
+    @Column(name = "name")
+    public String name;
+
+    @Column(name = "lat")
+    public double lat;
+
+    @Column(name = "lng")
+    public double lng;
+
+    public List<Info> informacoes() {
+        return getMany(Info.class, "Info");
     }
 
-    public void setId(Long id) {
+    public Place(){
+        super();
+    }
+
+    public Place(long id, String name, double lat, double lng) {
         this.id = id;
-    }
-
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Place)) return false;
-
-        Place place = (Place) o;
-
-        if (getId() != null ? !getId().equals(place.getId()) : place.getId() != null) return false;
-        return nome != null ? nome.equals(place.nome) : place.nome == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = getId() != null ? getId().hashCode() : 0;
-        result = 31 * result + (nome != null ? nome.hashCode() : 0);
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return nome;
+        this.name = name;
+        this.lat = lat;
+        this.lng = lng;
     }
 }
 

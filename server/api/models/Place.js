@@ -9,9 +9,12 @@ module.exports = {
 	schema: true,
 	connection: "mongoData",
 	attributes: {
-		nome:'string',
+		name:'string',
 		lat:'number',
-		lng:'number'
+		lng:'number',
+		informacoes: {
+			colection:'info'
+		}
 	}
 };
 

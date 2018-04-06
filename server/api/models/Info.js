@@ -11,7 +11,10 @@ module.exports = {
 	attributes: {
 		temp: 'string',
 		humi: 'string',
-		data: 'string'
+		data: 'date',
+		place: {
+			model: 'place'
+		}
 	}
 };
 

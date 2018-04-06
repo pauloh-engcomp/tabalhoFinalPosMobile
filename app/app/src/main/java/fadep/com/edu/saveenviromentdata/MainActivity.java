@@ -22,7 +22,7 @@ import android.widget.Toast;
 import fadep.com.edu.saveenviromentdata.model.Place;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener LocationListener  {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +47,10 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_TIME,
+                LOCATION_REFRESH_DISTANCE, mLocationListener);
     }
 
     /**
@@ -66,8 +70,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onClick(View v) {
                 if (!name.getText().toString().isEmpty()) {
-                    Place place = new Place();
-                    place.setNome(name.getText().toString());
+                    Place place = new Place(null, name.getText().toString());
                     save(place);
                     dialog.cancel();
                 } else {
@@ -118,5 +121,13 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        localizacao.setLat(location.getLatitude());
+        localizacao.setLog(location.getLongitude());
+        localizacao.setAlt(location.getAltitude());
+        saveLocalizacao(localizacao);
     }
 }
