@@ -44,7 +44,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, LocationListener {
 
     private AppDatabase appDatabase;
     private Place place = new Place();
@@ -82,27 +82,18 @@ public class MainActivity extends AppCompatActivity
         //this.locationService = retrofit.create(LocalizacaoService.class);
 
 
-        /*LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             if ( ! lm.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
                 showAlert();
             }
+        } else {
+            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, this);
+            Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            place.setLat(location.getLatitude());
+            place.setLng(location.getLongitude());
         }
-        lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, this);
-        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);*/
-        LocationManager mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            if ( ! mLocationManager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
-                showAlert();
-            }
-        }
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000,
-                0, mLocationListener);
-        Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        place.setLat(location.getLatitude());
-        place.setLng(location.getLongitude());
 
         appDatabase = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "saveenviromentdata").build();
 
@@ -111,8 +102,13 @@ public class MainActivity extends AppCompatActivity
         recyclerViewRoom.setHasFixedSize(true);
         LinearLayoutManager mLayoutManagerRoom = new LinearLayoutManager(this);
         recyclerViewRoom.setLayoutManager(mLayoutManagerRoom);
-        MyAdapterRoom mAdapterRoom = new MyAdapterRoom(new ArrayList<Place>());
+        MyAdapterRoom mAdapterRoom = new MyAdapterRoom(places, new MyAdapterRoom.OnItemClickListener() {
+            @Override public void onItemClick(Place place) {
+                Toast.makeText(MainActivity.this, "Item Clicked", Toast.LENGTH_LONG).show();
+            }
+        });
         recyclerViewRoom.setAdapter(mAdapterRoom);
+
     }
 
     /**
@@ -216,28 +212,28 @@ public class MainActivity extends AppCompatActivity
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
-    private final LocationListener mLocationListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-            place.setLat(location.getLatitude());
-            place.setLng(location.getLongitude());
-        }
 
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
 
-        }
+    @Override
+    public void onLocationChanged(Location location) {
+        place.setLat(location.getLatitude());
+        place.setLng(location.getLongitude());
+    }
 
-        @Override
-        public void onProviderEnabled(String provider) {
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
 
-        }
+    }
 
-        @Override
-        public void onProviderDisabled(String provider) {
+    @Override
+    public void onProviderEnabled(String provider) {
 
-        }
-    };
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
 
     public void showAlert() {
         AlertDialog.Builder alerta = new AlertDialog.Builder( this );

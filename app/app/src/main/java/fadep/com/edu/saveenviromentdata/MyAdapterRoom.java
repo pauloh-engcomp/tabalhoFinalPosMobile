@@ -8,14 +8,21 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import fadep.com.edu.saveenviromentdata.model.Place;
 
 public class MyAdapterRoom extends RecyclerView.Adapter<MyAdapterRoom.ViewHolder> {
-    private List<Place> mDataset;
+    public interface OnItemClickListener {
+        void onItemClick(Place place);
+    }
 
-    public MyAdapterRoom(){
-        this.mDataset = new ArrayList<Place>();
+    private final List<Place> mDataset;
+    public OnItemClickListener listener;
+
+    public MyAdapterRoom(List<Place> mDataset, OnItemClickListener listener) {
+        this.mDataset = mDataset;
+        this.listener = listener;
     }
 
     public void add(Place resp){
@@ -29,6 +36,14 @@ public class MyAdapterRoom extends RecyclerView.Adapter<MyAdapterRoom.ViewHolder
         public ViewHolder(View v) {
             super(v);
             txtNome = v.findViewById(R.id.txtNome);
+        }
+
+        public void bind(final Place item, final OnItemClickListener listener) {
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    listener.onItemClick(item);
+                }
+            });
         }
     }
 
@@ -48,6 +63,7 @@ public class MyAdapterRoom extends RecyclerView.Adapter<MyAdapterRoom.ViewHolder
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         holder.txtNome.setText(mDataset.get(position).getName());
+        holder.bind(mDataset.get(position), listener);
 
     }
 
