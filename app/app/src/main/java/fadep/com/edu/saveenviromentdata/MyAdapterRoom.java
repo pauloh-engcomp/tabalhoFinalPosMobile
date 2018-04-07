@@ -25,10 +25,15 @@ public class MyAdapterRoom extends RecyclerView.Adapter<MyAdapterRoom.ViewHolder
     public static class ViewHolder extends RecyclerView.ViewHolder {
         // each data item is just a string in this case
         public TextView txtNome;
+        public TextView txtLat;
+        public TextView txtLong;
+
 
         public ViewHolder(View v) {
             super(v);
             txtNome = v.findViewById(R.id.txtNome);
+            txtLat = v.findViewById(R.id.txtLat);
+            txtLong = v.findViewById(R.id.txtLong);
         }
     }
 
@@ -48,6 +53,8 @@ public class MyAdapterRoom extends RecyclerView.Adapter<MyAdapterRoom.ViewHolder
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         holder.txtNome.setText(mDataset.get(position).getName());
+        holder.txtLat.setText(String.valueOf(mDataset.get(position).getLat()));
+        holder.txtLong.setText(String.valueOf(mDataset.get(position).getLng()));
 
     }
 
