@@ -14,4 +14,8 @@
     <string name="success_save">Salvo com sucesso</string>
     <string name="error_form_invalid">Informe todos os campos</string>
     <string name="cancelar">Cancelar</string>
+    <string name="salvar_informa_es">Salvar informações</string>
+    <string name="temperatura">Temperatura</string>
+    <string name="luminosidade">Luminosidade</string>
+    <string name="save_error">Erro ao salvar</string>
 </resources>

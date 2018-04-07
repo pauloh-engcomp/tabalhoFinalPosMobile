@@ -6,16 +6,21 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import fadep.com.edu.saveenviromentdata.model.Place;
 
 public class MyAdapterRoom extends RecyclerView.Adapter<MyAdapterRoom.ViewHolder> {
-    private List<Place> mDataset;
+    public interface OnItemClickListener {
+        void onItemClick(Place place);
+    }
 
-    public MyAdapterRoom(){
-        this.mDataset = new ArrayList<Place>();
+    private final List<Place> mDataset;
+    public OnItemClickListener listener;
+
+    public MyAdapterRoom(List<Place> mDataset, OnItemClickListener listener) {
+        this.mDataset = mDataset;
+        this.listener = listener;
     }
 
     public void add(Place resp){
@@ -35,6 +40,14 @@ public class MyAdapterRoom extends RecyclerView.Adapter<MyAdapterRoom.ViewHolder
             txtLat = v.findViewById(R.id.txtLat);
             txtLong = v.findViewById(R.id.txtLong);
         }
+
+        public void bind(final Place item, final OnItemClickListener listener) {
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    listener.onItemClick(item);
+                }
+            });
+        }
     }
 
     public MyAdapterRoom(List<Place> myDataset) {
@@ -53,6 +66,7 @@ public class MyAdapterRoom extends RecyclerView.Adapter<MyAdapterRoom.ViewHolder
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         holder.txtNome.setText(mDataset.get(position).getName());
+        holder.bind(mDataset.get(position), listener);
         holder.txtLat.setText(String.valueOf(mDataset.get(position).getLat()));
         holder.txtLong.setText(String.valueOf(mDataset.get(position).getLng()));
 
