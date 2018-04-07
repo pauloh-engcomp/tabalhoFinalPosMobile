@@ -1,11 +1,24 @@
 package fadep.com.edu.saveenviromentdata;
 
+import android.Manifest;
 import android.app.Dialog;
+import android.arch.persistence.room.Room;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -15,14 +28,28 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import fadep.com.edu.saveenviromentdata.dao.AppDatabase;
 import fadep.com.edu.saveenviromentdata.model.Place;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener LocationListener  {
+        implements NavigationView.OnNavigationItemSelectedListener {
+
+    private AppDatabase appDatabase;
+    private Place place = new Place();
+    private RecyclerView recyclerViewRoom;
+    private List<Place> places = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,9 +75,44 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_TIME,
-                LOCATION_REFRESH_DISTANCE, mLocationListener);
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("http://localhost:1337/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        //this.locationService = retrofit.create(LocalizacaoService.class);
+
+
+        /*LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if ( ! lm.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+                showAlert();
+            }
+        }
+        lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, this);
+        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);*/
+        LocationManager mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if ( ! mLocationManager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+                showAlert();
+            }
+        }
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000,
+                0, mLocationListener);
+        Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        place.setLat(location.getLatitude());
+        place.setLng(location.getLongitude());
+
+        appDatabase = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "saveenviromentdata").build();
+
+        getAllPlaces();
+        recyclerViewRoom = (RecyclerView) findViewById(R.id.listPlaces);
+        recyclerViewRoom.setHasFixedSize(true);
+        LinearLayoutManager mLayoutManagerRoom = new LinearLayoutManager(this);
+        recyclerViewRoom.setLayoutManager(mLayoutManagerRoom);
+        MyAdapterRoom mAdapterRoom = new MyAdapterRoom(new ArrayList<Place>());
+        recyclerViewRoom.setAdapter(mAdapterRoom);
     }
 
     /**
@@ -70,7 +132,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onClick(View v) {
                 if (!name.getText().toString().isEmpty()) {
-                    Place place = new Place(null, name.getText().toString());
+                    place.setName(name.getText().toString());
                     save(place);
                     dialog.cancel();
                 } else {
@@ -92,8 +154,40 @@ public class MainActivity extends AppCompatActivity
     /**
      * Salva um novo local na memória do celular e na API rest, caso possua conexão com a internet.
      */
-    private void save(Place place) {
-        Toast.makeText(MainActivity.this, R.string.success_save, Toast.LENGTH_SHORT).show();
+    private void save(final Place place) {
+        try {
+            Thread rn = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    appDatabase.placeDao().create(place);
+                }
+            });
+            rn.start();
+            getAllPlaces();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(MainActivity.this, R.string.success_save, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Busca todas os locais salvos no banco do celular.
+     */
+    public void getAllPlaces() {
+        Thread rn = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                places = appDatabase.placeDao().read();
+            }
+        });
+
+        try{
+            rn.start();
+            while(rn.getState() != Thread.State.TERMINATED);
+            recyclerViewRoom.setAdapter(new MyAdapterRoom(places));
+        } catch (Exception e) {
+            Log.i("Atualiza Places","Erro" );
+        }
     }
 
     @Override
@@ -122,12 +216,42 @@ public class MainActivity extends AppCompatActivity
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
+    private final LocationListener mLocationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            place.setLat(location.getLatitude());
+            place.setLng(location.getLongitude());
+        }
 
-    @Override
-    public void onLocationChanged(Location location) {
-        localizacao.setLat(location.getLatitude());
-        localizacao.setLog(location.getLongitude());
-        localizacao.setAlt(location.getAltitude());
-        saveLocalizacao(localizacao);
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
+
+    public void showAlert() {
+        AlertDialog.Builder alerta = new AlertDialog.Builder( this );
+        alerta.setTitle( "Atenção" );
+        alerta.setMessage( "GPS não habilitado. Deseja Habilitar?" );
+        alerta.setCancelable( false );
+        alerta.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent i = new Intent( Settings.ACTION_LOCATION_SOURCE_SETTINGS );
+                startActivity( i );
+            }
+        } );
+        alerta.setNegativeButton( "Cancelar", null );
+        alerta.show();
     }
 }

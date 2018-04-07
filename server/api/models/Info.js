@@ -10,7 +10,7 @@ module.exports = {
 	connection: "mongoData",
 	attributes: {
 		temp: 'string',
-		humi: 'string',
+		lum: 'string',
 		data: 'date',
 		place: {
 			model: 'place'

@@ -1,27 +1,56 @@
 package fadep.com.edu.saveenviromentdata.model;
 
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
+
+import java.util.List;
+
 /**
  * Created by lucas on 04/04/18.
  */
 
-@Table(name = "Place")
+@Entity
+public class Place {
 
-public class Place extends Model {
+    @PrimaryKey(autoGenerate = true)
+    private long id;
 
-    @Column(name = "id", unique = true, onUniqueConflict = Column.ConflictAction.REPLACE)
-    public long id;
+    private String name;
 
-    @Column(name = "name")
-    public String name;
+    private double lat;
 
-    @Column(name = "lat")
-    public double lat;
+    private double lng;
 
-    @Column(name = "lng")
-    public double lng;
+    public long getId() {
+        return id;
+    }
 
-    public List<Info> informacoes() {
-        return getMany(Info.class, "Info");
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public double getLat() {
+        return lat;
+    }
+
+    public void setLat(double lat) {
+        this.lat = lat;
+    }
+
+    public double getLng() {
+        return lng;
+    }
+
+    public void setLng(double lng) {
+        this.lng = lng;
     }
 
     public Place(){
@@ -33,6 +62,11 @@ public class Place extends Model {
         this.name = name;
         this.lat = lat;
         this.lng = lng;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }
 
