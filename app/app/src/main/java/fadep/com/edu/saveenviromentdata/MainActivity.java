@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity
 
     private AppDatabase appDatabase;
     private Place place = new Place();
+    private Location local;
     private RecyclerView recyclerViewRoom;
     private List<Place> places = new ArrayList<>();
 
@@ -92,27 +93,28 @@ public class MainActivity extends AppCompatActivity
         lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, this);
         Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);*/
         LocationManager mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             if ( ! mLocationManager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
                 showAlert();
-            }
+                Toast.makeText(getBaseContext(), "Aqui", Toast.LENGTH_LONG).show();
+            } else Toast.makeText(getBaseContext(), "Ali", Toast.LENGTH_LONG).show();
+        } else {
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 60000,100, mLocationListener);
         }
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000,
-                0, mLocationListener);
-        Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        place.setLat(location.getLatitude());
-        place.setLng(location.getLongitude());
 
         appDatabase = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "saveenviromentdata").build();
-
-        getAllPlaces();
         recyclerViewRoom = (RecyclerView) findViewById(R.id.listPlaces);
         recyclerViewRoom.setHasFixedSize(true);
-        LinearLayoutManager mLayoutManagerRoom = new LinearLayoutManager(this);
+
+        LinearLayoutManager mLayoutManagerRoom = new LinearLayoutManager(getBaseContext());
         recyclerViewRoom.setLayoutManager(mLayoutManagerRoom);
+
         MyAdapterRoom mAdapterRoom = new MyAdapterRoom(new ArrayList<Place>());
         recyclerViewRoom.setAdapter(mAdapterRoom);
+
+        getAllPlaces();
     }
 
     /**
@@ -156,6 +158,16 @@ public class MainActivity extends AppCompatActivity
      */
     private void save(final Place place) {
         try {
+            // Verificar se o ponto está preenchido...
+            if(this.local != null){
+                place.setLat(this.local.getLatitude());
+                place.setLng(this.local.getLongitude());
+            } else {
+
+                place.setLat(0L);
+                place.setLng(0L);
+            }
+
             Thread rn = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -219,8 +231,7 @@ public class MainActivity extends AppCompatActivity
     private final LocationListener mLocationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
-            place.setLat(location.getLatitude());
-            place.setLng(location.getLongitude());
+            local = location;
         }
 
         @Override
