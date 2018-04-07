@@ -6,9 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import fadep.com.edu.saveenviromentdata.model.Place;
 
@@ -32,10 +30,15 @@ public class MyAdapterRoom extends RecyclerView.Adapter<MyAdapterRoom.ViewHolder
     public static class ViewHolder extends RecyclerView.ViewHolder {
         // each data item is just a string in this case
         public TextView txtNome;
+        public TextView txtLat;
+        public TextView txtLong;
+
 
         public ViewHolder(View v) {
             super(v);
             txtNome = v.findViewById(R.id.txtNome);
+            txtLat = v.findViewById(R.id.txtLat);
+            txtLong = v.findViewById(R.id.txtLong);
         }
 
         public void bind(final Place item, final OnItemClickListener listener) {
@@ -64,6 +67,8 @@ public class MyAdapterRoom extends RecyclerView.Adapter<MyAdapterRoom.ViewHolder
     public void onBindViewHolder(ViewHolder holder, int position) {
         holder.txtNome.setText(mDataset.get(position).getName());
         holder.bind(mDataset.get(position), listener);
+        holder.txtLat.setText(String.valueOf(mDataset.get(position).getLat()));
+        holder.txtLong.setText(String.valueOf(mDataset.get(position).getLng()));
 
     }
 
