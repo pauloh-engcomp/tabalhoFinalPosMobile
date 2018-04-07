@@ -18,4 +18,5 @@
     <string name="temperatura">Temperatura</string>
     <string name="luminosidade">Luminosidade</string>
     <string name="save_error">Erro ao salvar</string>
+    <string name="title_activity_dash_board">DashBoardActivity</string>
 </resources>

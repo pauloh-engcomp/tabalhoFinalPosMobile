@@ -63,11 +63,6 @@ public class Place {
         this.lat = lat;
         this.lng = lng;
     }
-
-    @Override
-    public String toString() {
-        return name;
-    }
 }
 
 
