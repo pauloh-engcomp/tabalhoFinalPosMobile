@@ -302,9 +302,11 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.places) {
-            System.out.print("Places");
+            Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
         } else if (id == R.id.dashboard) {
-            System.out.print("DashBoard");
+            Intent intent = new Intent(this, DashBoardActivity.class);
+            startActivity(intent);
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
