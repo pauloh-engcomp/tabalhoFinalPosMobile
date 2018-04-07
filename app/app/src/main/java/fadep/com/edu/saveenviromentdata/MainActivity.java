@@ -3,14 +3,22 @@ package fadep.com.edu.saveenviromentdata;
 import android.Manifest;
 import android.app.Dialog;
 import android.arch.persistence.room.Room;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.hardware.usb.UsbManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
 import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -33,15 +41,27 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import fadep.com.edu.saveenviromentdata.dao.AppDatabase;
 import fadep.com.edu.saveenviromentdata.model.Place;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+
+import static java.lang.Math.asin;
+import static java.lang.Math.atan2;
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
+import static java.lang.Math.toDegrees;
+import static java.lang.Math.toRadians;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -51,11 +71,19 @@ public class MainActivity extends AppCompatActivity
     private Location local;
     private RecyclerView recyclerViewRoom;
     private List<Place> places = new ArrayList<>();
+    private UsbService usbService;
+    private TextView tv;
+    private MyHandler mHandler;
+    private UsbManager usbManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mHandler = new MyHandler(this);
+        usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -80,18 +108,7 @@ public class MainActivity extends AppCompatActivity
                 .baseUrl("http://localhost:1337/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-        //this.locationService = retrofit.create(LocalizacaoService.class);
 
-
-        /*LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            if ( ! lm.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
-                showAlert();
-            }
-        }
-        lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, this);
-        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);*/
         LocationManager mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
@@ -264,5 +281,151 @@ public class MainActivity extends AppCompatActivity
         } );
         alerta.setNegativeButton( "Cancelar", null );
         alerta.show();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        setFilters();  // Start listening notifications from UsbService
+        startService(UsbService.class, usbConnection, null); // Start UsbService(if it was not started before) and Bind it
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        unbindService(usbConnection);
+    }
+
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+        unregisterReceiver(mUsbReceiver);
+        stopService(new Intent(this, UsbService.class));
+    }
+
+
+
+    /*
+     * Notifications from UsbService will be received here.
+     */
+    private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (intent.getAction()) {
+                case UsbService.ACTION_USB_PERMISSION_GRANTED: // USB PERMISSION GRANTED
+                    Toast.makeText(context, "USB Pronta", Toast.LENGTH_SHORT).show();
+                    break;
+                case UsbService.ACTION_USB_PERMISSION_NOT_GRANTED: // USB PERMISSION NOT GRANTED
+                    Toast.makeText(context, "USB Permission not granted", Toast.LENGTH_SHORT).show();
+                    break;
+                case UsbService.ACTION_NO_USB: // NO USB CONNECTED
+                    Toast.makeText(context, "No USB connected", Toast.LENGTH_SHORT).show();
+                    break;
+                case UsbService.ACTION_USB_DISCONNECTED: // USB DISCONNECTED
+                    Toast.makeText(context, "USB desconectada", Toast.LENGTH_SHORT).show();
+                    break;
+                case UsbService.ACTION_USB_NOT_SUPPORTED: // USB NOT SUPPORTED
+                    Toast.makeText(context, "USB device not supported", Toast.LENGTH_SHORT).show();
+                    break;
+                default: Toast.makeText(context, "Alguma coisa...", Toast.LENGTH_SHORT).show();
+            }
+        }
+    };
+
+    private final ServiceConnection usbConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName arg0, IBinder arg1) {
+            usbService = ((UsbService.UsbBinder) arg1).getService();
+            usbService.setHandler(mHandler);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            usbService = null;
+        }
+    };
+
+    private void startService(Class<?> service, ServiceConnection serviceConnection, Bundle extras) {
+        if (!UsbService.SERVICE_CONNECTED) {
+            Intent startService = new Intent(this, service);
+            if (extras != null && !extras.isEmpty()) {
+                Set<String> keys = extras.keySet();
+                for (String key : keys) {
+                    String extra = extras.getString(key);
+                    startService.putExtra(key, extra);
+                }
+            }
+            startService(startService);
+        }
+        Intent bindingIntent = new Intent(this, service);
+        bindService(bindingIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    private void setFilters() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(UsbService.ACTION_USB_PERMISSION_GRANTED);
+        filter.addAction(UsbService.ACTION_NO_USB);
+        filter.addAction(UsbService.ACTION_USB_DISCONNECTED);
+        filter.addAction(UsbService.ACTION_USB_NOT_SUPPORTED);
+        filter.addAction(UsbService.ACTION_USB_PERMISSION_NOT_GRANTED);
+        registerReceiver(mUsbReceiver, filter);
+    }
+
+    /*
+     * This handler will be passed to UsbService. Data received from serial port is displayed through this handler
+     */
+    private static class MyHandler extends Handler {
+        private final MainActivity mActivity;
+        private Pattern modeloPonto = Pattern.compile("(?:\\{\\\"temp\\\"\\: )([.0-9]*)(?: \\, \\\"lum\\\"\\: )([0-9]*)(?: \\})(.*)");
+        private Pattern modeloErro = Pattern.compile("([^\\}]*\\})(.*)");
+        private Matcher m;
+        private String buffer = "";
+
+        public MyHandler(MainActivity activity) {
+            this.mActivity = activity;
+            this.buffer = "";
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case UsbService.MESSAGE_FROM_SERIAL_PORT:
+                    buffer = (String) msg.obj;
+                    mActivity.tv.append("\n1 - Main Activity: "+buffer);
+                    break;
+                case UsbService.CTS_CHANGE:
+                    Toast.makeText(mActivity, "CTS_CHANGE",Toast.LENGTH_LONG).show();
+                    break;
+                case UsbService.DSR_CHANGE:
+                    Toast.makeText(mActivity, "DSR_CHANGE",Toast.LENGTH_LONG).show();
+                    break;
+                case UsbService.SYNC_READ:
+                    //timer.schedule(new limpaBuffer(), 1000);
+                    buffer += (String) msg.obj;
+
+                    // Verificar o padrão
+                    m = modeloPonto.matcher(buffer);
+                    // Enquanto tiver ponto a ser colocado...
+
+                    while(m.matches()){
+                        mActivity.inserirPonto(Double.valueOf(m.group(1)), Integer.valueOf(m.group(2)));
+                        buffer = ("".equals(m.group(3)) ? "" : m.group(3));
+                        m = modeloPonto.matcher(buffer);
+                        mActivity.usbService.write("t".getBytes());
+                    }
+
+                    // Elimina os erros
+                    m = modeloErro.matcher(buffer);
+                    if(m.matches()) {
+                        buffer = ("".equals(m.group(2)) ? "" : "("+m.group(2));
+                        mActivity.tv.append("Limpou erro...\n");
+                    }
+                    break;
+            }
+        }
+    }
+
+    public void inserirPonto(Double temp, Integer lum){
+        tv.append("Chamada do Ponto...");
     }
 }
